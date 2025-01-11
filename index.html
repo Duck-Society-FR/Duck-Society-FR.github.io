@@ -16,7 +16,64 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh; /* Hauteur minimale pour couvrir l'écran */
+            min-height: 250vh; /* Hauteur minimale pour couvrir l'écran */
+            scroll-behavior: smooth; /* Effet de défilement fluide */
+        }
+
+        /* Barre en haut ajustée pour l'image carrée et le logo Discord */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #333; /* Couleur de fond de la barre */
+            padding: 10px 20px; /* Taille ajustée pour ne prendre que la place nécessaire avec une marge */
+            z-index: 1000; /* Pour s'assurer que la barre soit au-dessus des autres éléments */
+            display: flex;
+            justify-content: space-between; /* Espacement entre les éléments */
+            align-items: center; /* Centre verticalement les éléments */
+        }
+
+        /* Image carrée à gauche dans la barre en haut */
+        .top-bar .left-image img {
+            width: 50px;
+            height: 50px;
+            border-radius: 0; /* Pas de bord arrondi */
+        }
+
+        /* Logo Discord dans la barre en haut à droite */
+        .discord-section img {
+            position: relative;
+            top: 3px;
+            right: 30px;
+            width: 50px; /* Taille de l'icône Discord */
+            height: 50px;
+            border-radius: 30%; /* Rend l'image ronde */
+            transition: transform 0.3s ease;
+        }
+
+        .discord-section img:hover {
+            transform: scale(1.1); /* Effet de zoom au survol */
+        }
+
+        /* Navigation dans la barre */
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            flex-grow: 1; /* Pour centrer les liens */
+            justify-content: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            transform: scale(1.1); /* Effet d'agrandissement au survol */
         }
 
         h1 {
@@ -28,11 +85,12 @@
             font-size: 60px;
             opacity: 0; /* Invisible au départ */
             animation: slideInFromBottom 1.5s ease forwards; /* Animation de déplacement et d'apparition */
-            margin-top: 50px; /* Espacement par rapport au haut de la page */
+            margin-top: 100px; /* Espacement ajusté pour la barre en haut */
         }
 
         h3 {
             position: relative;
+            left: 170px;
             user-select: none;
             color: #646464;
             font-weight: 400;
@@ -42,7 +100,7 @@
             margin-top: 20px; /* Espacement avec le titre principal */
         }
 
-        img {
+        .main-image {
             position: relative;
             width: 300px; /* Taille originale inchangée */
             margin-top: 20px; /* Espacement entre le texte et l'image */
@@ -104,25 +162,6 @@
             user-select: none;
         }
 
-        .discord-section {
-            position: relative;
-            bottom: -58px;
-            right: 920px;
-        }
-
-        .discord-section img {
-            width: 50px; /* Taille de l'icône Discord */
-            height: 50px;
-            border-radius: 30%; /* Rend l'image ronde */
-            transition: transform 0.3s ease;
-        }
-
-        .discord-section img:hover {
-            transform: scale(1.1); /* Effet de zoom au survol */
-        }
-
-  
-
         footer {
             user-select: none;
             width: 100%;
@@ -135,53 +174,75 @@
 
         @keyframes slideInFromBottom {
             0% {
-                top: 60px; /* Position de départ (en bas) */
+                top: 50px; /* Position de départ (en bas) */
                 opacity: 0; /* Invisible */
             }
             100% {
-                top: 0px; /* Position finale plus haut */
+                top: 30px; /* Position finale plus haut */
                 opacity: 1; /* Visible */
             }
         }
 
         @keyframes slideInFromBottomH3 {
             0% {
-                top: 650px; /* Position de départ (en bas) */
+                top: 600px; /* Position de départ (en bas) */
                 opacity: 0; /* Invisible */
             }
             100% {
-                top: 600px; /* Position finale plus haut */
+                top: 550px; /* Position finale plus haut */
                 opacity: 1; /* Visible */
             }
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to Duck Society</h1>
-    <h3>The official website of Duck Society!</h3>
-    <img src="Duck_Classic.png" alt="Duck Image"> <!-- Taille du canard inchangée -->
-    <div class="projects">Projects</div>
+    <!-- Barre en haut ajustée avec une petite marge -->
+    <div class="top-bar">
+        <!-- Image carrée à gauche -->
+        <div class="left-image">
+            <img src="Duck_Classic.png" alt="Square Image">
+        </div>
 
-    <div class="content-section">
-        <img class="lazy-image" src="duckOS-logo.png" alt="DuckOS Image">
-        <div class="text">
-            <h4>DuckOS</h4>
-            <p>A fast and original OS made by ducks! (Indev)</p>
+        <!-- Navigation dans la barre -->
+        <div class="nav-links">
+            <a href="#welcome">Welcome</a>
+            <a href="#projects">Projets</a>
+        </div>
+        
+        <!-- Logo Discord à droite -->
+        <div class="discord-section">
+            <a href="https://discord.gg/zc3hkrYggF" target="_blank">
+                <img src="discord_logo.png" alt="Join us on Discord">
+            </a>
         </div>
     </div>
 
-    <div class="content-section">
-        <div class="text">
-            <h4>The Bread Quest!</h4>
-            <p>An RPG/Battle royale game made by ducks!</p>
-        </div>
-        <img class="lazy-image" src="tbq-logo-new.png" alt="Bread Quest Image">
+    <!-- Section Welcome avec id -->
+    <div id="welcome">
+        <h1>Welcome to Duck Society</h1>
+        <h3>The official website of Duck Society!</h3>
+        <img class="main-image" src="Duck_Classic.png" alt="Duck Image"> <!-- Taille du canard inchangée -->
     </div>
 
-    <div class="discord-section">
-        <a href="https://discord.gg/zc3hkrYggF" target="_blank">
-            <img src="discord_logo.png" alt="Join us on Discord">
-        </a>
+    <!-- Section Projets avec id -->
+    <div id="projects">
+        <div class="projects">Projects</div>
+
+        <div class="content-section">
+            <img class="lazy-image" src="duckOS-logo.png" alt="DuckOS Image">
+            <div class="text">
+                <h4>DuckOS</h4>
+                <p>A fast and original OS made by ducks! (Indev)</p>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="text">
+                <h4>The Bread Quest!</h4>
+                <p>An RPG/Battle royale game made by ducks!</p>
+            </div>
+            <img class="lazy-image" src="tbq-logo-new.png" alt="Bread Quest Image">
+        </div>
     </div>
 
     <footer>
