@@ -16,7 +16,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 245vh; /* Permet le scroll */
+            min-height: 100vh; /* Hauteur minimale pour couvrir l'écran */
         }
 
         h1 {
@@ -105,22 +105,32 @@
         }
 
         .discord-section {
-            margin-top: 100px;
-            text-align: center;
+            position: relative;
+            bottom: -58px;
+            right: 920px;
         }
 
         .discord-section img {
-            width: 60px; /* Taille de l'icône Discord */
-            height: 60px;
+            width: 50px; /* Taille de l'icône Discord */
+            height: 50px;
+            border-radius: 30%; /* Rend l'image ronde */
             transition: transform 0.3s ease;
         }
 
         .discord-section img:hover {
-            transform: scale(1.05); /* Effet de zoom au survol */
+            transform: scale(1.1); /* Effet de zoom au survol */
         }
 
-        .discord-section a {
-            text-decoration: none;
+  
+
+        footer {
+            user-select: none;
+            width: 100%;
+            background-color: #333; /* Couleur de fond du footer */
+            color: white; /* Couleur du texte */
+            text-align: center; /* Centrer le texte */
+            padding: 20px 0; /* Espacement intérieur */
+            margin-top: auto; /* Place automatiquement le footer en bas */
         }
 
         @keyframes slideInFromBottom {
@@ -170,9 +180,13 @@
 
     <div class="discord-section">
         <a href="https://discord.gg/zc3hkrYggF" target="_blank">
-            <img src="discord-logo.jpg" alt="Join us on Discord">
+            <img src="discord_logo.png" alt="Join us on Discord">
         </a>
     </div>
+
+    <footer>
+        © Copyright Duck Society - All right reserved
+    </footer>
 
     <script>
         // Intersection Observer pour déclencher les animations
