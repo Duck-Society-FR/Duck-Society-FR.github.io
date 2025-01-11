@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duck Society</title>
     <!-- Importation de la police Raleway depuis Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Raleway', sans-serif;
+            font-family: 'Nunito', serif;
             line-height: 1.6;
             margin: 0;
             padding: 0;
@@ -16,7 +16,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 200vh; /* Permet le scroll */
+            height: 245vh; /* Permet le scroll */
         }
 
         h1 {
@@ -44,10 +44,10 @@
 
         img {
             position: relative;
-            width: 300px; /* Taille de l'image augmentée */
+            width: 300px; /* Taille originale inchangée */
             margin-top: 20px; /* Espacement entre le texte et l'image */
             opacity: 0; /* Invisible au départ */
-            animation: slideInFromBottom 1.5s ease 0.2s forwards; /* Utilisation de la même animation pour l'image */
+            animation: slideInFromBottom 1.5s ease 0.2s forwards; /* Animation de l'apparition */
             display: block;
             margin-left: auto;
             margin-right: auto;
@@ -62,6 +62,65 @@
             color: #333;
             text-align: center;
             opacity: 1; /* Visible lorsque l'on scroll */
+        }
+
+        .content-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 50px;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+            gap: 10px; /* Réduit l'espace entre les éléments */
+            opacity: 0; /* Initialement invisible */
+            transform: translateY(50px); /* Décalage vers le bas */
+            transition: opacity 1s ease, transform 1s ease; /* Transition pour l'animation */
+        }
+
+        .content-section.visible {
+            opacity: 1; /* Visible */
+            transform: translateY(0); /* Position d'origine */
+        }
+
+        .content-section img {
+            width: 360px;
+            height: 360px;
+            border-radius: 15px;
+        }
+
+        .content-section .text {
+            font-size: 22px;
+            color: #555;
+            max-width: 600px;
+            margin-left: 5px; /* Rapproche le texte de l'image */
+            user-select: none;
+        }
+
+        .content-section .text h4 {
+            font-size: 50px;
+            color: #000;
+            margin-bottom: 10px;
+            user-select: none;
+        }
+
+        .discord-section {
+            margin-top: 100px;
+            text-align: center;
+        }
+
+        .discord-section img {
+            width: 60px; /* Taille de l'icône Discord */
+            height: 60px;
+            transition: transform 0.3s ease;
+        }
+
+        .discord-section img:hover {
+            transform: scale(1.05); /* Effet de zoom au survol */
+        }
+
+        .discord-section a {
+            text-decoration: none;
         }
 
         @keyframes slideInFromBottom {
@@ -90,9 +149,46 @@
 <body>
     <h1>Welcome to Duck Society</h1>
     <h3>The official website of Duck Society!</h3>
-    <img src="Duck_Classic.png" alt="Duck Image">
+    <img src="Duck_Classic.png" alt="Duck Image"> <!-- Taille du canard inchangée -->
     <div class="projects">Projects</div>
 
+    <div class="content-section">
+        <img class="lazy-image" src="duckOS-logo.png" alt="DuckOS Image">
+        <div class="text">
+            <h4>DuckOS</h4>
+            <p>A fast and original OS made by ducks! (Indev)</p>
+        </div>
+    </div>
 
+    <div class="content-section">
+        <div class="text">
+            <h4>The Bread Quest!</h4>
+            <p>An RPG/Battle royale game made by ducks!</p>
+        </div>
+        <img class="lazy-image" src="tbq-logo-new.png" alt="Bread Quest Image">
+    </div>
+
+    <div class="discord-section">
+        <a href="https://discord.gg/zc3hkrYggF" target="_blank">
+            <img src="discord-logo.jpg" alt="Join us on Discord">
+        </a>
+    </div>
+
+    <script>
+        // Intersection Observer pour déclencher les animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible'); // Ajoute la classe pour déclencher l'animation
+                }
+            });
+        }, {
+            threshold: 0.1 // Le pourcentage visible pour déclencher l'animation
+        });
+
+        // Observer toutes les sections de contenu (images et texte inclus)
+        const contentSections = document.querySelectorAll('.content-section');
+        contentSections.forEach(section => observer.observe(section));
+    </script>
 </body>
 </html>
