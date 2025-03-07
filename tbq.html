@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Bread Adventure</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #87CEEB;
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+            color: white;
+            text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+
+        #bread-count {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        #biome-indicator {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            font-size: 24px;
+            display: none;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+
+        #studio-logo {
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .portal {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-container">
+            <div id="bread-count">Bread: 0/5</div>
+            <div id="biome-indicator">Biome: City</div>
+        </div>
+        <div id="start-screen">
+            <div id="studio-logo">
+                <svg width="200" height="80" viewBox="0 0 200 80">
+                    <rect x="5" y="25" width="190" height="30" rx="5" ry="5" fill="#FFEB3B" />
+                    <text x="100" y="47" font-family="Courier New, monospace" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">QUACK STUDIOS</text>
+                    <circle cx="25" cy="40" r="15" fill="#FFEB3B" stroke="#333" stroke-width="2" />
+                    <circle cx="25" cy="37" r="3" fill="#333" />
+                    <path d="M25 42 L32 42 L32 45 L25 45 Z" fill="#FF9800" />
+                </svg>
+            </div>
+            <h1>Duck Bread Adventure</h1>
+            <p>You are a duck on a mission to find Gérard, the bread giver.</p>
+            <p>Collect all the bread pieces and bring them to Gérard to win!</p>
+            <p>Use WASD or Arrow keys to move around.</p>
+            <p>Look for portals to travel between different biomes.</p>
+            <button id="start-button">Start Game</button>
+        </div>
+        <div id="game-over">
+            <h1 id="game-over-text">You Win!</h1>
+            <p id="game-over-description">You found Gérard and gave him all the bread!</p>
+            <button id="restart-button">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game constants
+        const TILE_SIZE = 32;
+        const PLAYER_SPEED = 3;
+        const WORLD_WIDTH = 20;
+        const WORLD_HEIGHT = 15;
+        
+        // Game state
+        let playerX = WORLD_WIDTH * TILE_SIZE / 2;
+        let playerY = WORLD_HEIGHT * TILE_SIZE / 2;
+        let playerDirection = 'down';
+        let playerMoving = false;
+        let breadCount = 0;
+        let totalBread = 5;
+        let currentBiome = 'city';
+        let biomes = ['city', 'village', 'house', 'store'];
+        let portalPositions = {};
+        let breadPositions = {};
+        let gerardPosition = null;
+        let gameStarted = false;
+        let canvasScale = 1;
+
+        // DOM elements
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const breadCountElement = document.getElementById('bread-count');
+        const biomeIndicator = document.getElementById('biome-indicator');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Calculate scale to maintain aspect ratio
+            const gameAspectRatio = WORLD_WIDTH / WORLD_HEIGHT;
+            const windowAspectRatio = window.innerWidth / window.innerHeight;
+            
+            if (windowAspectRatio > gameAspectRatio) {
+                // Window is wider than game
+                canvasScale = window.innerHeight / (WORLD_HEIGHT * TILE_SIZE);
+            } else {
+                // Window is taller than game
+                canvasScale = window.innerWidth / (WORLD_WIDTH * TILE_SIZE);
+            }
+            
+            // Set font size based on canvas scale
+            breadCountElement.style.fontSize = `${16 * canvasScale}px`;
+            biomeIndicator.style.fontSize = `${16 * canvasScale}px`;
+        }
+        
+        // Add resize event listener
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initial canvas setup
+        resizeCanvas();
+
+        // Assets
+        const assets = {
+            duck: {
+                up: [],
+                down: [],
+                left: [],
+                right: []
+            },
+            bread: null,
+            gerard: null,
+            tiles: {
+                city: null,
+                village: null,
+                house: null,
+                store: null
+            },
+            portal: null
+        };
+
+        // Create pixel art using canvas
+        function createPixelArt(width, height, drawFunction) {
+            const artCanvas = document.createElement('canvas');
+            artCanvas.width = width;
+            artCanvas.height = height;
+            const artCtx = artCanvas.getContext('2d');
+            drawFunction(artCtx);
+            return artCanvas;
+        }
+
+        // Create duck sprites
+        function createDuckSprites() {
+            // Duck facing down
+            assets.duck.down.push(createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Body
+                ctx.fillStyle = '#FFEB3B';
+                ctx.fillRect(8, 10, 16, 14);
+                
+                // Head
+                ctx.fillRect(10, 4, 12, 10);
+                
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.fillRect(9, 7, 3, 3);
+                ctx.fillRect(20, 7, 3, 3);
+                
+                // Beak
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(13, 12, 6, 3);
+                
+                // Feet
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(10, 24, 4, 2);
+                ctx.fillRect(18, 24, 4, 2);
+            }));
+
+            // Duck facing up
+            assets.duck.up.push(createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Body
+                ctx.fillStyle = '#FFEB3B';
+                ctx.fillRect(8, 10, 16, 14);
+                
+                // Head
+                ctx.fillRect(10, 4, 12, 10);
+                
+                // Back of head
+                ctx.fillStyle = '#FFD54F';
+                ctx.fillRect(10, 4, 12, 5);
+                
+                // Feet
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(10, 24, 4, 2);
+                ctx.fillRect(18, 24, 4, 2);
+            }));
+
+            // Duck facing left
+            assets.duck.left.push(createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Body
+                ctx.fillStyle = '#FFEB3B';
+                ctx.fillRect(8, 10, 16, 14);
+                
+                // Head
+                ctx.fillRect(4, 8, 10, 10);
+                
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.fillRect(6, 8, 3, 3);
+                
+                // Beak
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(1, 12, 5, 3);
+                
+                // Feet
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(10, 24, 4, 2);
+                ctx.fillRect(18, 24, 4, 2);
+            }));
+
+            // Duck facing right
+            assets.duck.right.push(createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Body
+                ctx.fillStyle = '#FFEB3B';
+                ctx.fillRect(8, 10, 16, 14);
+                
+                // Head
+                ctx.fillRect(18, 8, 10, 10);
+                
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.fillRect(23, 8, 3, 3);
+                
+                // Beak
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(26, 12, 5, 3);
+                
+                // Feet
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(10, 24, 4, 2);
+                ctx.fillRect(18, 24, 4, 2);
+            }));
+
+            // Create walking animation frames (slight vertical movement)
+            for (const direction in assets.duck) {
+                const baseFrame = assets.duck[direction][0];
+                assets.duck[direction].push(createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                    ctx.drawImage(baseFrame, 0, -1);
+                }));
+            }
+        }
+
+        // Create bread sprite
+        function createBreadSprite() {
+            assets.bread = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Bread loaf
+                ctx.fillStyle = '#D6BA7A';
+                ctx.fillRect(8, 12, 16, 10);
+                
+                // Bread top curve
+                ctx.fillStyle = '#D6BA7A';
+                ctx.fillRect(10, 10, 12, 2);
+                
+                // Bread details
+                ctx.fillStyle = '#BE9B55';
+                ctx.fillRect(10, 14, 2, 2);
+                ctx.fillRect(16, 16, 2, 2);
+                ctx.fillRect(20, 15, 2, 2);
+            });
+        }
+
+        // Create Gerard sprite
+        function createGerardSprite() {
+            assets.gerard = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Body
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(8, 12, 16, 16);
+                
+                // Head
+                ctx.fillStyle = '#FFCCBC';
+                ctx.fillRect(10, 4, 12, 10);
+                
+                // Hair
+                ctx.fillStyle = '#4E342E';
+                ctx.fillRect(10, 4, 12, 3);
+                
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.fillRect(12, 8, 2, 2);
+                ctx.fillRect(18, 8, 2, 2);
+                
+                // Mouth
+                ctx.fillStyle = '#E57373';
+                ctx.fillRect(14, 12, 4, 1);
+                
+                // Bread in hand
+                ctx.fillStyle = '#D6BA7A';
+                ctx.fillRect(24, 16, 6, 4);
+            });
+        }
+
+        // Create tile sprites
+        function createTileSprites() {
+            // City tiles
+            assets.tiles.city = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Concrete
+                ctx.fillStyle = '#90A4AE';
+                ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+                
+                // Concrete details
+                ctx.fillStyle = '#78909C';
+                
+                // Random cracks and details
+                for (let i = 0; i < 5; i++) {
+                    const x = Math.floor(Math.random() * TILE_SIZE);
+                    const y = Math.floor(Math.random() * TILE_SIZE);
+                    const size = Math.floor(Math.random() * 3) + 1;
+                    ctx.fillRect(x, y, size, size);
+                }
+            });
+
+            // Village tiles
+            assets.tiles.village = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Grass
+                ctx.fillStyle = '#8BC34A';
+                ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+                
+                // Grass details
+                ctx.fillStyle = '#7CB342';
+                
+                // Random grass tufts
+                for (let i = 0; i < 6; i++) {
+                    const x = Math.floor(Math.random() * TILE_SIZE);
+                    const y = Math.floor(Math.random() * TILE_SIZE);
+                    const size = Math.floor(Math.random() * 3) + 1;
+                    ctx.fillRect(x, y, size, size);
+                }
+            });
+
+            // House tiles
+            assets.tiles.house = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Wooden floor
+                ctx.fillStyle = '#A1887F';
+                ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+                
+                // Wood grain
+                ctx.fillStyle = '#8D6E63';
+                
+                // Horizontal wood planks
+                for (let i = 0; i < TILE_SIZE; i += 8) {
+                    ctx.fillRect(0, i, TILE_SIZE, 1);
+                }
+                
+                // Random wood knots
+                for (let i = 0; i < 2; i++) {
+                    const x = Math.floor(Math.random() * TILE_SIZE);
+                    const y = Math.floor(Math.random() * TILE_SIZE);
+                    const size = Math.floor(Math.random() * 3) + 1;
+                    ctx.fillRect(x, y, size, size);
+                }
+            });
+
+            // Store tiles
+            assets.tiles.store = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Tile floor
+                ctx.fillStyle = '#ECEFF1';
+                ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+                
+                // Checkered pattern
+                ctx.fillStyle = '#CFD8DC';
+                ctx.fillRect(0, 0, TILE_SIZE/2, TILE_SIZE/2);
+                ctx.fillRect(TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/2);
+            });
+
+            // Portal
+            assets.portal = createPixelArt(TILE_SIZE, TILE_SIZE, (ctx) => {
+                // Portal swirl
+                for (let i = 0; i < 5; i++) {
+                    const radius = 14 - i * 2;
+                    const hue = (i * 20) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                    ctx.beginPath();
+                    ctx.arc(TILE_SIZE/2, TILE_SIZE/2, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Portal center
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(TILE_SIZE/2, TILE_SIZE/2, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Initialize game assets
+        function initAssets() {
+            createDuckSprites();
+            createBreadSprite();
+            createGerardSprite();
+            createTileSprites();
+        }
+
+        // Initialize biomes
+        function initBiomes() {
+            // Set up portals between biomes
+            portalPositions = {
+                city: [
+                    {x: 2 * TILE_SIZE, y: 3 * TILE_SIZE, to: 'village'},
+                    {x: 17 * TILE_SIZE, y: 12 * TILE_SIZE, to: 'store'}
+                ],
+                village: [
+                    {x: 18 * TILE_SIZE, y: 7 * TILE_SIZE, to: 'city'},
+                    {x: 5 * TILE_SIZE, y: 13 * TILE_SIZE, to: 'house'}
+                ],
+                house: [
+                    {x: 10 * TILE_SIZE, y: 13 * TILE_SIZE, to: 'village'}
+                ],
+                store: [
+                    {x: 3 * TILE_SIZE, y: 3 * TILE_SIZE, to: 'city'}
+                ]
+            };
+
+            // Set up bread in different biomes
+            breadPositions = {
+                city: [
+                    {x: 5 * TILE_SIZE, y: 5 * TILE_SIZE},
+                    {x: 15 * TILE_SIZE, y: 8 * TILE_SIZE}
+                ],
+                village: [
+                    {x: 12 * TILE_SIZE, y: 4 * TILE_SIZE}
+                ],
+                house: [
+                    {x: 5 * TILE_SIZE, y: 5 * TILE_SIZE}
+                ],
+                store: [
+                    {x: 17 * TILE_SIZE, y: 10 * TILE_SIZE}
+                ]
+            };
+
+            // Set Gerard's position in the village biome
+            gerardPosition = {x: 10 * TILE_SIZE, y: 7 * TILE_SIZE, biome: 'village'};
+        }
+
+        // Initialize game
+        function initGame() {
+            initAssets();
+            initBiomes();
+            
+            // Set player in the city biome to start
+            playerX = 10 * TILE_SIZE;
+            playerY = 10 * TILE_SIZE;
+            currentBiome = 'city';
+            breadCount = 0;
+            updateBreadCountUI();
+            updateBiomeIndicator();
+        }
+
+        // Game update loop
+        function update() {
+            if (!gameStarted) return;
+            
+            handleMovement();
+            checkPortals();
+            checkBreadCollection();
+            checkGerardInteraction();
+            
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        // Handle player movement
+        function handleMovement() {
+            // Handle key input
+            if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                playerY -= PLAYER_SPEED;
+                playerDirection = 'up';
+                playerMoving = true;
+            } else if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                playerY += PLAYER_SPEED;
+                playerDirection = 'down';
+                playerMoving = true;
+            } else if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                playerX -= PLAYER_SPEED;
+                playerDirection = 'left';
+                playerMoving = true;
+            } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+                playerX += PLAYER_SPEED;
+                playerDirection = 'right';
+                playerMoving = true;
+            } else {
+                playerMoving = false;
+            }
+            
+            // Keep player within bounds
+            playerX = Math.max(TILE_SIZE / 2, Math.min(WORLD_WIDTH * TILE_SIZE - TILE_SIZE / 2, playerX));
+            playerY = Math.max(TILE_SIZE / 2, Math.min(WORLD_HEIGHT * TILE_SIZE - TILE_SIZE / 2, playerY));
+        }
+
+        // Check if player is on a portal
+        function checkPortals() {
+            if (portalPositions[currentBiome]) {
+                portalPositions[currentBiome].forEach(portal => {
+                    const distance = Math.sqrt(Math.pow(playerX - portal.x, 2) + Math.pow(playerY - portal.y, 2));
+                    if (distance < TILE_SIZE / 2) {
+                        // Transport to new biome
+                        currentBiome = portal.to;
+                        
+                        // Move player to a safe position in the new biome
+                        const safeTileX = Math.floor(Math.random() * (WORLD_WIDTH - 4)) + 2;
+                        const safeTileY = Math.floor(Math.random() * (WORLD_HEIGHT - 4)) + 2;
+                        playerX = safeTileX * TILE_SIZE;
+                        playerY = safeTileY * TILE_SIZE;
+                        
+                        updateBiomeIndicator();
+                    }
+                });
+            }
+        }
+
+        // Check if player collects bread
+        function checkBreadCollection() {
+            if (breadPositions[currentBiome]) {
+                for (let i = 0; i < breadPositions[currentBiome].length; i++) {
+                    const bread = breadPositions[currentBiome][i];
+                    if (bread) {
+                        const distance = Math.sqrt(Math.pow(playerX - bread.x, 2) + Math.pow(playerY - bread.y, 2));
+                        if (distance < TILE_SIZE / 2) {
+                            // Collect bread
+                            breadPositions[currentBiome][i] = null;
+                            breadCount++;
+                            updateBreadCountUI();
+                            
+                            // Play a sound effect (simple beep for now)
+                            const audio = new AudioContext();
+                            const oscillator = audio.createOscillator();
+                            oscillator.type = 'sine';
+                            oscillator.frequency.setValueAtTime(660, audio.currentTime);
+                            oscillator.connect(audio.destination);
+                            oscillator.start();
+                            oscillator.stop(audio.currentTime + 0.1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check if player meets Gerard with all bread
+        function checkGerardInteraction() {
+            if (currentBiome === gerardPosition.biome) {
+                const distance = Math.sqrt(
+                    Math.pow(playerX - gerardPosition.x, 2) + 
+                    Math.pow(playerY - gerardPosition.y, 2)
+                );
+                
+                if (distance < TILE_SIZE) {
+                    if (breadCount >= totalBread) {
+                        gameWin();
+                    }
+                }
+            }
+        }
+
+        // Game win
+        function gameWin() {
+            gameStarted = false;
+            document.getElementById('game-over-text').textContent = "You Win!";
+            document.getElementById('game-over-description').textContent = 
+                "You found Gérard and gave him all the bread! He's very happy.";
+            gameOverScreen.style.display = "flex";
+        }
+
+        // Update bread count UI
+        function updateBreadCountUI() {
+            breadCountElement.textContent = `Bread: ${breadCount}/${totalBread}`;
+        }
+
+        // Update biome indicator
+        function updateBiomeIndicator() {
+            biomeIndicator.textContent = `Biome: ${currentBiome.charAt(0).toUpperCase() + currentBiome.slice(1)}`;
+        }
+
+        // Game rendering
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Apply scaling for fullscreen
+            ctx.save();
+            ctx.scale(canvasScale, canvasScale);
+            
+            // Draw background tiles
+            drawBackground();
+            
+            // Draw portals
+            drawPortals();
+            
+            // Draw bread
+            drawBread();
+            
+            // Draw Gerard if in the current biome
+            if (currentBiome === gerardPosition.biome) {
+                ctx.drawImage(assets.gerard, gerardPosition.x - TILE_SIZE/2, gerardPosition.y - TILE_SIZE/2);
+            }
+            
+            // Draw player
+            drawPlayer();
+            
+            // Restore context
+            ctx.restore();
+        }
+
+        // Draw background tiles
+        function drawBackground() {
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    ctx.drawImage(assets.tiles[currentBiome], x * TILE_SIZE, y * TILE_SIZE);
+                }
+            }
+        }
+
+        // Draw portals
+        function drawPortals() {
+            if (portalPositions[currentBiome]) {
+                portalPositions[currentBiome].forEach(portal => {
+                    ctx.drawImage(assets.portal, portal.x - TILE_SIZE/2, portal.y - TILE_SIZE/2);
+                });
+            }
+        }
+
+        // Draw bread
+        function drawBread() {
+            if (breadPositions[currentBiome]) {
+                breadPositions[currentBiome].forEach(bread => {
+                    if (bread) {
+                        ctx.drawImage(assets.bread, bread.x - TILE_SIZE/2, bread.y - TILE_SIZE/2);
+                    }
+                });
+            }
+        }
+
+        // Draw player
+        function drawPlayer() {
+            // Choose the right animation frame based on movement
+            const frameIndex = playerMoving ? Math.floor(Date.now() / 200) % 2 : 0;
+            
+            ctx.drawImage(
+                assets.duck[playerDirection][frameIndex], 
+                playerX - TILE_SIZE/2, 
+                playerY - TILE_SIZE/2
+            );
+        }
+
+        // Keyboard input handling
+        const keys = {};
+        
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Game start
+        startButton.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            gameStarted = true;
+            update();
+        });
+
+        // Game restart
+        restartButton.addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            initGame();
+            gameStarted = true;
+            update();
+        });
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>
